@@ -48,7 +48,7 @@ app.delete('/api/persons/:id', (req, res) => {
 })
 
 // POST Request new person to DB
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body
   console.log(body)
 
@@ -58,15 +58,18 @@ app.post('/api/persons', (req, res) => {
     date: new Date()
   })
 
-  person.save().then(savedPerson => {
-    res.json(savedPerson.toJSON())
-  })
+  person
+    .save()
+    .then(savedPerson => savedPerson.toJSON())
+    .then(savedAndFormattedPerson => {
+      res.json(savedAndFormattedPerson)
+    })
+    .catch(error => next(error))
 })
 
 // PUT Request for updating person in DB 
 app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body
-  console.log(body)
 
   const person = {
     number: body.number
@@ -85,11 +88,15 @@ const unknownEndpoint = ((req, res) => {
 })
 app.use(unknownEndpoint)
 
+// HANDLE ERROR FOR MALFORMATTED INPUT
 const errorHandler = (error, request, response, next) => {
   console.log(error.message)
-
-  if (error.name === 'CastError') {
-    return response.status(404).send({ error: 'malformatted id' })
+  
+  switch(error.name) {
+    case 'CastError':
+      return response.status(400).send({ error: 'malformatted id' })
+    case 'ValidationError':
+      return response.status(400).send({ error: error.message })
   }
   next(error)
 }
