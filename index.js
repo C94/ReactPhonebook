@@ -1,3 +1,4 @@
+// USE ENV VARS
 require('dotenv').config()
 
 const express = require('express')
